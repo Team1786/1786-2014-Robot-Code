@@ -4,6 +4,8 @@ class main : public IterativeRobot
 {
 	RobotDrive drivetrain;
 	Joystick stick;
+	float stickY;
+	float stickX;
 	
 public:
 	main(void):
@@ -19,18 +21,28 @@ public:
 	
 	void TeleopInit(void)
 	{
+		drivetrain.SetExpiration(2);
 		drivetrain.SetSafetyEnabled(true);
 		printf("Starting Teleop mode");
 	}
 	
 	void TeleopPeriodic(void)
 	{
-		//drivetrain.MecanumDrive_Polar(stick.GetMagnitude(), stick.GetDirectionDegrees(), stick.GetTwist()); //pass the joystick information to the drivetrain using the built in MecanumDrive
-		drivetrain.ArcadeDrive(stick); //pass the joystick information to the drivetrain using the simplified ArcadeDrive
+		stickY=stick.GetY()*((-stick.GetTwist()+1)/2);
+		stickX=stick.GetZ()*((-stick.GetTwist()+1)/2);
+		printf("X:%f,Y%f\n", stickX, stickY);
+		drivetrain.ArcadeDrive(-stickY,stickX,false); //pass the joystick information to the drivetrain using the simplified ArcadeDrive
 	}
 	
-	void Test()
+	void TestInit(void)
 	{
+		printf("Starting Test");
+	}
+	void TestPeriodic(void) //echos debugging info through netconsole
+	{
+		stickY=stick.GetY()*((-stick.GetTwist()+1)/2);
+		stickX=stick.GetZ()*((-stick.GetTwist()+1)/2);
+		printf("X:%f,Y%f,Z:%f,Twist:%f,Throttle:%f\n", stickX, stickY, stick.GetZ(), stick.GetTwist(), stick.GetThrottle());
 	}
 };
 
