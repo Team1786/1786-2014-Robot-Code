@@ -29,7 +29,7 @@ public:
 	void TeleopPeriodic(void)
 	{
 		stickY=stick.GetY()*((-stick.GetTwist()+1)/2);
-		stickX=stick.GetZ()*((-stick.GetTwist()+1)/2);
+		stickX=stick.GetX()*((-stick.GetTwist()+1)/2);
 		printf("X:%f,Y%f\n", stickX, stickY);
 		drivetrain.ArcadeDrive(-stickY,stickX,false); //pass the joystick information to the drivetrain using the simplified ArcadeDrive
 	}
@@ -37,11 +37,12 @@ public:
 	void TestInit(void)
 	{
 		printf("Starting Test");
+		drivetrain.SetSafetyEnabled(false);
 	}
 	void TestPeriodic(void) //echos debugging info through netconsole
 	{
 		stickY=stick.GetY()*((-stick.GetTwist()+1)/2);
-		stickX=stick.GetZ()*((-stick.GetTwist()+1)/2);
+		stickX=stick.GetX()*((-stick.GetTwist()+1)/2);
 		printf("X:%f,Y%f,Z:%f,Twist:%f,Throttle:%f\n", stickX, stickY, stick.GetZ(), stick.GetTwist(), stick.GetThrottle());
 	}
 };
