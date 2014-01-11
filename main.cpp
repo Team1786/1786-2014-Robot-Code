@@ -36,14 +36,14 @@ public:
 	{
 	}
 	
-	void autonomousInit(void)
+	void AutonomousInit(void)
 	{
 		encoderLeft.Start();
 		encoderRight.Start();
 		drivetrain.SetSafetyEnabled(false); //disable watchdog
 	}
 	
-	void autonomousPeriodic(void)
+	void AutonomousPeriodic(void)
 	{
 		if(encoderLeft.GetDistance()>5&&encoderRight.GetDistance()>5)
 		{
