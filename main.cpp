@@ -3,7 +3,7 @@
 class main : public IterativeRobot
 {
 	RobotDrive drivetrain;
-	Joystick stick;
+	Joystick driveStick;
 
 private:
 	struct input
@@ -15,11 +15,11 @@ private:
 		input js;
 		static bool invertButtonHeld=false;
 		static int invertDrive=1; //1 for normal, -1 for inverted
-		if(stick.GetRawButton(1)!=invertButtonHeld&&stick.GetRawButton(1)) invertDrive=-invertDrive; //if invert button changed and new button state is pressed, invert invertDrive
-		invertButtonHeld=stick.GetRawButton(1); //update stored value for button
-		float throttleScale=((1-stick.GetTwist())/2); //make throttle 0-1 for scaling the joystick input
-		js.rotate=-stick.GetX()*throttleScale*invertDrive; //get X and multiply by throttleScale and invertDrive //TODO check which of these (X/Y) need to be inverted to begin with
-		js.drive=stick.GetY()*throttleScale*invertDrive; //do the same with Y
+		if(driveStick.GetRawButton(1)&&!invertButtonHeld) invertDrive=-invertDrive; //if invert button changed and new button state is pressed, invert invertDrive
+		invertButtonHeld=driveStick.GetRawButton(1); //update stored value for button
+		float throttleScale=((1-driveStick.GetTwist())/2); //make throttle 0-1 for scaling the joystick input
+		js.rotate=-driveStick.GetX()*throttleScale*invertDrive; //get X and multiply by throttleScale and invertDrive //TODO check which of these (X/Y) need to be inverted to begin with
+		js.drive=driveStick.GetY()*throttleScale*invertDrive; //do the same with Y
 		return js;
 	}
 
@@ -27,7 +27,7 @@ public:
 	main(void):
 		//init the Joystick and RobotDrive (numbers refer to ports)
 		drivetrain(1,2),
-		stick(1)
+		driveStick(1)
 	{
 	}
 
@@ -57,7 +57,7 @@ public:
 	void TestPeriodic(void) //prints debugging info to netconsole
 	{
 		input js=updateJoystick();
-		printf("rotate:%f,drive%f,X:%f,Y:%f,Z(Twist):%f,Twist(Throttle):%f,Throttle:%f\n", js.rotate, js.drive, stick.GetX(), stick.GetY(), stick.GetZ(), stick.GetTwist(), stick.GetThrottle()); //report what WPILIB thinks these are. Some don't match with what we think they are.
+		printf("rotate:%f,drive%f,X:%f,Y:%f,Z(Twist):%f,Twist(Throttle):%f,Throttle:%f\n", js.rotate, js.drive, driveStick.GetX(), driveStick.GetY(), driveStick.GetZ(), driveStick.GetTwist(), driveStick.GetThrottle()); //report what WPILIB thinks these are. Some don't match with what we think they are.
 	}
 };
 
