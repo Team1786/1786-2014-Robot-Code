@@ -4,8 +4,7 @@ class main : public IterativeRobot
 {
 	RobotDrive drivetrain;
 	Joystick stick;
-	Encoder encoderLeft;
-	Encoder encoderRight;
+	Encoder encoder;
 
 private:
 	struct input
@@ -31,28 +30,27 @@ public:
 		//init the Joystick and RobotDrive (numbers refer to ports)
 		drivetrain(1,2),
 		stick(1),
-		encoderLeft(1,2),
-		encoderRight(3,4)
+		encoder(1,2)
 	{
 	}
 	
 	void AutonomousInit(void)
 	{
-		encoderLeft.Start();
-		encoderRight.Start();
+		encoder.Start();
 		drivetrain.SetSafetyEnabled(false); //disable watchdog
 	}
 	
 	void AutonomousPeriodic(void)
 	{
-		if(encoderLeft.GetDistance()>5&&encoderRight.GetDistance()>5)
+		if(encoder.GetDistance()>5)
 		{
 			drivetrain.ArcadeDrive(0.0,.5);
 		}
-		else{
+		else
+		{
 			drivetrain.ArcadeDrive(1,0);
 		}
-		printf("Left: %f\tRight:%f\n", encoderLeft.GetDistance(), encoderRight.GetDistance());
+		printf("Encoder:%f\n", encoder.GetDistance());
 	}
 
 	void TeleopInit(void)
