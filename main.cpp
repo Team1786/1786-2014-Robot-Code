@@ -1,4 +1,5 @@
 #include "WPILib.h"
+#include "CRioNetworking.h"
 
 class main : public IterativeRobot
 {
@@ -11,6 +12,7 @@ private:
 		float rotate;
 		float drive;
 	};
+	
 	input updateJoystick(){
 		input js;
 		static bool invertButtonHeld=false;
@@ -29,10 +31,12 @@ public:
 		drivetrain(1,2),
 		stick(1)
 	{
+		
 	}
 
 	void autonomousPeriodic(void)
 	{
+		
 	}
 
 	void TeleopInit(void)
@@ -46,6 +50,11 @@ public:
 	{
 		input js=updateJoystick();
 		drivetrain.ArcadeDrive(js.drive,js.rotate,false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+	}
+	
+	void TeleopContinuous(void)
+	{
+		
 	}
 
 	void TestInit(void)
