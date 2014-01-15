@@ -11,7 +11,8 @@ private:
 		float rotate;
 		float drive;
 	};
-	input updateJoystick(){
+	input updateJoystick()
+	{
 		input js;
 		static bool invertButtonHeld=false;
 		static int invertDrive=1; //1 for normal, -1 for inverted
