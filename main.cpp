@@ -32,6 +32,7 @@ public:
 		stick(1),
 		encoder(1,2)
 	{
+		encoder.SetDistancePerPulse(atan(1)*4*6) //atan(1)*4=pi //TODO: change 6 to 8 when wheels changed
 	}
 	
 	void AutonomousInit(void)
