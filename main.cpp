@@ -74,11 +74,6 @@ public:
 			//drivetrain.ArcadeDrive(atof((char*)drive), atof((char*)rotate), false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
 		}
 	}
-	
-	void TeleopContinuous(void)
-	{
-		
-	}
 
 	void TestInit(void)
 	{
