@@ -16,7 +16,9 @@ private:
 		input js;
 		static bool invertButtonHeld=false;
 		static int invertDrive=1; //1 for normal, -1 for inverted
-		if(driveStick.GetRawButton(1)&&!invertButtonHeld) invertDrive=-invertDrive; //if invert button changed and new button state is pressed, invert invertDrive
+		if(driveStick.GetRawButton(1)&&!invertButtonHeld){
+			invertDrive=-invertDrive; //if invert button changed and new button state is pressed, invert invertDrive
+		}
 		invertButtonHeld=driveStick.GetRawButton(1); //update stored value for button
 		float throttleScale=((1-driveStick.GetTwist())/2); //make throttle 0-1 for scaling the joystick input
 		js.rotate=-driveStick.GetX()*throttleScale*invertDrive; //get X and multiply by throttleScale and invertDrive //TODO check which of these (X/Y) need to be inverted to begin with
