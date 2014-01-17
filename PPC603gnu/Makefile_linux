@@ -168,7 +168,12 @@ main_partialImage/$(MODE_DIR)/Objects/main/main.o : /home/myles/Robotics/cRio/It
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi;echo "building $@"; $(TOOL_PATH)ccppc.exe $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP -mlongcall $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL   $(DEFINES) -o "$@" -c "$<"
 
 
-OBJECTS_main_partialImage = main_partialImage/$(MODE_DIR)/Objects/main/main.o 
+main_partialImage/$(MODE_DIR)/Objects/main/CRioNetworking.o : /home/myles/Robotics/cRio/IterativeRobot/main/CRioNetworking.cpp
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi;echo "building $@"; $(TOOL_PATH)ccppc.exe $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP -mlongcall $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL   $(DEFINES) -o "$@" -c "$<"
+
+
+OBJECTS_main_partialImage = main_partialImage/$(MODE_DIR)/Objects/main/main.o \
+main_partialImage/$(MODE_DIR)/Objects/main/CRioNetworking.o 
 
 main_partialImage/$(MODE_DIR)/main_partialImage.o : $(OBJECTS_main_partialImage)
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi;echo "building $@"; $(TOOL_PATH)ccppc.exe -r -nostdlib -Wl,-X  -o "$@" $(OBJECTS_main_partialImage) $(LIBPATH) $(LIBS) $(ADDED_LIBPATH) $(ADDED_LIBS)  && if [ "$(EXPAND_DBG)" = "1" ]; then plink "$@";fi
@@ -180,7 +185,7 @@ _clean :: main_partialImage/$(MODE_DIR)/main_partialImage_clean
 main_partialImage/$(MODE_DIR)/main_partialImage_clean : 
 	$(TRACE_FLAG)if [ -d "main_partialImage" ]; then cd "main_partialImage"; rm -rf $(MODE_DIR); fi
 
-DEP_FILES := main_partialImage/$(MODE_DIR)/Objects/main/main.d 
+DEP_FILES := main_partialImage/$(MODE_DIR)/Objects/main/main.d main_partialImage/$(MODE_DIR)/Objects/main/CRioNetworking.d 
 ##DEP_FILES not used on Linux##
 
 
@@ -222,7 +227,7 @@ external_clean ::
 # Custom targets inserted by ucpp
 
 deploy: $(PROJECT_TARGETS)
-	wput -u main/Debug/main.out ftp://anonymous@10.17.86.2/ni-rt/system/FRC_UserProgram.out
+	wput -u main/Debug/main.out ftp://anonymous@10.17.86.2/ni-rt/system/FRC_UserProgram.out&&echo reboot|nc -u -q1 10.17.86.2 6668&&echo "Rebooting cRio..."
 
 undeploy:
 	ftp 10.17.86.2 < /usr/share/ucpp/ucpp/delcode

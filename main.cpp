@@ -62,16 +62,41 @@ public:
 	void TeleopPeriodic(void)
 	{
 		input js=updateJoystick();
-		if(!isComm)
+		if(stick.GetRawButton(2))
 		{
-			drivetrain.ArcadeDrive(js.drive,js.rotate,false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+			isComm = true;
+			if(networking->IsSuspended())
+			{
+				networking->Resume();
+				printf("Resuming\n");
+			}
+			printf("true\n");
 		}
 		else
 		{
-			//int c = data.find_first_of(',');
-			//char* drive = data.substr(0, c);
-			//char* rotate = (char*)data.substr(c);
-			//drivetrain.ArcadeDrive(atof((char*)drive), atof((char*)rotate), false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+			isComm = false;
+			if(!networking->IsSuspended())
+			{
+				printf("Suspending: %d", networking->Suspend());
+				//printf("Suspending\n");
+			}
+			printf("false\n");
+		}
+		if(!isComm)
+		{
+			drivetrain.ArcadeDrive(js.drive,js.rotate,false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+			printf("Driving\n");
+		}
+		else
+		{
+			printf("Targeting\n");
+			if(data.length())
+			{
+				int c = data.find_first_of(',');
+				char* drive = (char*)data.substr(0, c).c_str();
+				char* rotate = (char*)data.substr(c).c_str();
+				drivetrain.ArcadeDrive(atof((char*)drive), atof((char*)rotate), false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+			}
 		}
 	}
 
@@ -108,25 +133,21 @@ public:
 
 int networkMethod(void)
 {
-	while(true)
-	{
-		printf("Task!\n");
-		sleep(1);	
-	}
-	//CRioNetworking* cRio = new CRioNetworking();
-	//cRio->connect();
-	//cRio->send("Ready!");
+	CRioNetworking* cRio = new CRioNetworking();
+	cRio->connect();
+	cRio->send("Ready!");
 	while(true)
 	{
 		if(isComm)
 		{
-			//cRio->send("Give my data!!!");
+			cRio->send("Give my data!!!");
 			//char* data;
 			while(isComm)
 			{
-				//data = (char*)cRio->receive();
+				data = (char*)cRio->receive();
 			}
 		}
+		sleep(1);
 	}
 	return 0;
 }
