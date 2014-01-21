@@ -3,13 +3,13 @@
 ##### Project-specific ucpp settings #####
 
 # Workspace root directory
-export CPP_PROJECT_WS_ROOT_DIR="/home/myles/Robotics/cRio/IterativeRobot"
+export CPP_PROJECT_WS_ROOT_DIR="/home/adam/FRC2014"
 
 # Project name
 export CPP_PROJECT_NAME="main"
 
 # Project root directory
-export CPP_PROJECT_ROOT_DIR="/home/myles/Robotics/cRio/IterativeRobot/main"
+export CPP_PROJECT_ROOT_DIR="/home/adam/FRC2014/main"
 # IP to deploy robot code
 export DEPLOY_IP=10.17.86.2
 # Default configure method for "ucpp configure"

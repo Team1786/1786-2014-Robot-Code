@@ -18,7 +18,7 @@ private:
 		float rotate;
 		float drive;
 	};
-	
+
 	input updateJoystick()
 	{
 		input js;
@@ -41,7 +41,7 @@ public:
 		networking = new Task("networking", (FUNCPTR)&networkMethod);
 		isComm = false;
 	}
-	
+
 	void AutonomousInit(void)
 	{
 		networking->Start();
@@ -49,7 +49,7 @@ public:
 
 	void AutonomousPeriodic(void)
 	{
-		
+
 	}
 
 	void TeleopInit(void)
@@ -106,6 +106,7 @@ public:
 		drivetrain.SetSafetyEnabled(false); //disable watchdog so that it doesn't fill the log with useless stuff. Also, we don't really want to move in Test
 		networking->Start();
 		printf("network started\n");
+		isComm=true;
 	}
 
 	void TestPeriodic(void) //prints debugging info to netconsole
@@ -123,7 +124,7 @@ public:
 			networking->Resume();
 		}
 	}
-	
+
 	void DisabledInit(void)
 	{
 		printf("Stopping");
@@ -134,17 +135,20 @@ public:
 int networkMethod(void)
 {
 	CRioNetworking* cRio = new CRioNetworking();
+	char* data;
 	cRio->connect();
-	cRio->send("Ready!");
+	while(!isComm);
+	cRio->send("Ready!\n");
+	sleep(1);
 	while(true)
 	{
 		if(isComm)
 		{
-			cRio->send("Give my data!!!");
-			//char* data;
+			cRio->send("Give my data!!!\n");
 			while(isComm)
 			{
-				data = (char*)cRio->receive();
+				data = cRio->receive();
+				printf("%s", data);
 			}
 		}
 		sleep(1);
