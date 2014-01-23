@@ -135,20 +135,20 @@ public:
 int networkMethod(void)
 {
 	CRioNetworking* cRio = new CRioNetworking();
-	char* data;
+	char data[20];
 	cRio->connect();
 	while(!isComm);
-	cRio->send("Ready!\n");
+	cRio->send("Ready!");
 	sleep(1);
 	while(true)
 	{
 		if(isComm)
 		{
-			cRio->send("Give my data!!!\n");
+			cRio->send("Give my data!!!");
 			while(isComm)
 			{
-				data = cRio->receive();
-				printf("%s", data);
+				cRio->receive(data, 20);
+				printf("buf=%s\n", data);
 			}
 		}
 		sleep(1);

@@ -16,7 +16,6 @@ private:
 	struct sockaddr_in myaddr;	/* our address */
 	struct sockaddr_in remaddr;	/* remote address */
 	int addrlen;
-	int recvlen;			/* # bytes received */
 	int fd;				/* our socket */
 	char *server;
 
@@ -25,7 +24,7 @@ public:
 	int connect(void);
 	void disconnect(void);
 	void send(char* message);
-	char* receive(void);
+	void receive(char * buf, int bufLen);
 };
 
 #endif

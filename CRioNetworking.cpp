@@ -49,18 +49,16 @@ void CRioNetworking::send(char* message)
 	}
 }
 
-char* CRioNetworking::receive(void)
+void CRioNetworking::receive(char* buf, int bufLen)
 {
-	char* buf;	/* receive buffer */
-	while(true)
+	int recvlen=0;
+	while(recvlen==0)
 	{
-		recvlen = recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&remaddr, &addrlen);
+		recvlen = recvfrom(fd, buf, bufLen, 0, (struct sockaddr *)&remaddr, &addrlen);
 		//printf("received %d bytes\n", recvlen);
 		if (recvlen > 0)
 		{
 			buf[recvlen] = 0;
-			return  buf;
 		}
 	}
-	return 0;
 }
