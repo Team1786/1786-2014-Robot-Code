@@ -222,7 +222,7 @@ external_clean ::
 # Custom targets inserted by ucpp
 
 deploy: $(PROJECT_TARGETS)
-	wput -u main/Debug/main.out ftp://anonymous@10.17.86.2/ni-rt/system/FRC_UserProgram.out
+	wput -u main/Debug/main.out ftp://anonymous@10.17.86.2/ni-rt/system/FRC_UserProgram.out&&echo reboot|nc -u -q1 10.17.86.2 6668&&echo "Rebooting cRio..."
 
 undeploy:
 	ftp 10.17.86.2 < /home/adam/.bin/ucpp/delcode

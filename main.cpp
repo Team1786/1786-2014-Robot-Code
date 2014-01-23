@@ -12,7 +12,7 @@ private:
 		float rotate;
 		float drive;
 	};
-	
+
 	input updateJoystick(){
 		input js;
 		static bool invertButtonHeld=false;
@@ -32,26 +32,29 @@ public:
 		stick(1),
 		encoder(1,2)
 	{
-		encoder.SetDistancePerPulse(atan(1)*4*6) //atan(1)*4=pi //TODO: change 6 to 8 when wheels changed
+		encoder.SetDistancePerPulse((3.1415926535*6)/250); //TODO: change 6 to 8 when wheels changed
+		encoder.Start();
 	}
-	
+
 	void AutonomousInit(void)
 	{
-		encoder.Start();
+		encoder.Reset();
 		drivetrain.SetSafetyEnabled(false); //disable watchdog
 	}
-	
+
 	void AutonomousPeriodic(void)
 	{
-		if(encoder.GetDistance()>5)
+		//drivetrain.ArcadeDrive(0.5,0);
+		printf("Encoder:%f\t Raw:%i\n", encoder.GetDistance(), (int)encoder.GetRaw());
+		SmartDashboard::PutNumber("Encoder", encoder.GetDistance());
+		if(encoder.GetDistance()<60)
 		{
-			drivetrain.ArcadeDrive(0.0,.5);
+			drivetrain.ArcadeDrive(.5,0);
 		}
 		else
 		{
-			drivetrain.ArcadeDrive(1,0);
+			drivetrain.ArcadeDrive(0.0 ,0);
 		}
-		printf("Encoder:%f\n", encoder.GetDistance());
 	}
 
 	void TeleopInit(void)
