@@ -7,10 +7,10 @@
 # make rules only(!) in this project's ".wrmakefile" file. These will then be
 # automatically dumped into the makefiles.
 
-export WIND_HOME=/home/adam/.ucpp/gccdist/WindRiver
-export WIND_BASE=/home/adam/.ucpp/gccdist/WindRiver/vxworks-6.3
-export WIND_LIC_PROXY=/home/adam/.ucpp/gccdist/WindRiver/setup/x86-win32/bin/
-export LM_LICENSE_FILE=/home/adam/.ucpp/gccdist/WindRiver/license/zwrsLicense.lic
+export WIND_HOME=/home/myles/.ucpp/gccdist/WindRiver
+export WIND_BASE=/home/myles/.ucpp/gccdist/WindRiver/vxworks-6.3
+export WIND_LIC_PROXY=/home/myles/.ucpp/gccdist/WindRiver/setup/x86-win32/bin/
+export LM_LICENSE_FILE=/home/myles/.ucpp/gccdist/WindRiver/license/zwrsLicense.lic
 export WINEDEBUG=fixme-all
 WIND_HOME := $(subst \,/,$(WIND_HOME))
 WIND_BASE := $(subst \,/,$(WIND_BASE))
@@ -37,8 +37,8 @@ else
 MODE_DIR := NonDebug
 endif
 OBJ_DIR := .
-PRJ_ROOT_DIR := /home/adam/FRC2014/main
-WS_ROOT_DIR := /home/adam/FRC2014
+PRJ_ROOT_DIR := /home/myles/Robotics/cRio/IterativeRobot/main
+WS_ROOT_DIR := /home/myles/Robotics/cRio/IterativeRobot
 
 
 
@@ -53,7 +53,7 @@ VX_CPU_FAMILY = ppc
 CPU = PPC603
 TOOL_FAMILY = gnu
 TOOL = gnu
-TOOL_PATH = wine /home/adam/.ucpp/gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/bin/
+TOOL_PATH = wine /home/myles/.ucpp/gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/bin/
 CC_ARCH_SPEC = -mcpu=603 -mstrict-align -mno-implicit-fp  -mlongcall
 LIBPATH = 
 LIBS = 
@@ -114,7 +114,7 @@ main/$(MODE_DIR)/% : VX_CPU_FAMILY = ppc
 main/$(MODE_DIR)/% : CPU = PPC603
 main/$(MODE_DIR)/% : TOOL_FAMILY = gnu
 main/$(MODE_DIR)/% : TOOL = gnu
-main/$(MODE_DIR)/% : TOOL_PATH = wine /home/adam/.ucpp/gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/bin/
+main/$(MODE_DIR)/% : TOOL_PATH = wine /home/myles/.ucpp/gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/bin/
 main/$(MODE_DIR)/% : CC_ARCH_SPEC = -mcpu=603 -mstrict-align -mno-implicit-fp  -mlongcall
 main/$(MODE_DIR)/% : LIBPATH = 
 main/$(MODE_DIR)/% : LIBS = 
@@ -158,13 +158,13 @@ main_partialImage/$(MODE_DIR)/% : VX_CPU_FAMILY = ppc
 main_partialImage/$(MODE_DIR)/% : CPU = PPC603
 main_partialImage/$(MODE_DIR)/% : TOOL_FAMILY = gnu
 main_partialImage/$(MODE_DIR)/% : TOOL = gnu
-main_partialImage/$(MODE_DIR)/% : TOOL_PATH = wine /home/adam/.ucpp/gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/bin/
+main_partialImage/$(MODE_DIR)/% : TOOL_PATH = wine /home/myles/.ucpp/gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/bin/
 main_partialImage/$(MODE_DIR)/% : CC_ARCH_SPEC = -mcpu=603 -mstrict-align -mno-implicit-fp  -mlongcall
 main_partialImage/$(MODE_DIR)/% : LIBPATH = 
 main_partialImage/$(MODE_DIR)/% : LIBS = 
 main_partialImage/$(MODE_DIR)/% : OBJ_DIR := main_partialImage/$(MODE_DIR)
 
-main_partialImage/$(MODE_DIR)/Objects/main/main.o : /home/adam/FRC2014/main/main.cpp
+main_partialImage/$(MODE_DIR)/Objects/main/main.o : /home/myles/Robotics/cRio/IterativeRobot/main/main.cpp
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi;echo "building $@"; $(TOOL_PATH)ccppc.exe $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP -mlongcall $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL   $(DEFINES) -o "$@" -c "$<"
 
 
@@ -225,5 +225,5 @@ deploy: $(PROJECT_TARGETS)
 	wput -u main/Debug/main.out ftp://anonymous@10.17.86.2/ni-rt/system/FRC_UserProgram.out&&echo reboot|nc -u -q1 10.17.86.2 6668&&echo "Rebooting cRio..."
 
 undeploy:
-	ftp 10.17.86.2 < /home/adam/.bin/ucpp/delcode
+	ftp 10.17.86.2 < /usr/share/ucpp/ucpp/delcode
 

@@ -4,7 +4,8 @@ class main : public IterativeRobot
 {
 	RobotDrive drivetrain;
 	Joystick stick;
-	Encoder encoder;
+	Encoder leftEncoder;
+	Encoder rightEncoder;
 
 private:
 	struct input
@@ -30,26 +31,31 @@ public:
 		//init the Joystick and RobotDrive (numbers refer to ports)
 		drivetrain(1,2),
 		stick(1),
-		encoder(1,2)
+		leftEncoder(1,2),
+		rightEncoder(3,4)
 	{
-		encoder.SetDistancePerPulse((3.1415926535*6)/250); //TODO: change 6 to 8 when wheels changed
-		encoder.Start();
+		leftEncoder.SetDistancePerPulse((3.1415926535*8)/250);
+		rightEncoder.SetDistancePerPulse((3.1415926535*8)/250);
+		leftEncoder.Start();
+		rightEncoder.Start();
 	}
 
 	void AutonomousInit(void)
 	{
-		encoder.Reset();
+		leftEncoder.Reset();
+		rightEncoder.Reset();
 		drivetrain.SetSafetyEnabled(false); //disable watchdog
 	}
 
 	void AutonomousPeriodic(void)
 	{
 		//drivetrain.ArcadeDrive(0.5,0);
-		printf("Encoder:%f\t Raw:%i\n", encoder.GetDistance(), (int)encoder.GetRaw());
-		SmartDashboard::PutNumber("Encoder", encoder.GetDistance());
-		if(encoder.GetDistance()<60)
+		printf("Left Encoder:%f\t Raw:%i <--> Right Encoder:%f\t Raw:%i\n", leftEncoder.GetDistance(), (int)leftEncoder.GetRaw(), rightEncoder.GetDistance(), (int)rightEncoder.GetRaw());
+		SmartDashboard::PutNumber("Left Encoder", leftEncoder.GetDistance());
+		SmartDashboard::PutNumber("Right Encoder", rightEncoder.GetDistance());
+		if(leftEncoder.GetDistance() < 60)
 		{
-			drivetrain.ArcadeDrive(.5,0);
+			drivetrain.ArcadeDrive(.3,0);
 		}
 		else
 		{
