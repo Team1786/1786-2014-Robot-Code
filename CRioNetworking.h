@@ -24,7 +24,7 @@ public:
 	int connect(void);
 	void disconnect(void);
 	void send(char* message);
-	void receive(char * buf, int bufLen);
+	int receive(char * buf, int bufLen);
 };
 
 #endif

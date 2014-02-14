@@ -2,7 +2,7 @@
 
 CRioNetworking::CRioNetworking(void)
 {
-	server = "10.17.86.7";	/* change this to use a different server */
+	server = "10.17.86.6";	/* change this to use a different server */
 	addrlen = sizeof(remaddr);		/* length of addresses */
 }
 
@@ -13,6 +13,7 @@ int CRioNetworking::connect(void)
 		perror("cannot create socket\n");
 		return 0;
 	}
+	fcntl(fd, F_SETFL, O_NONBLOCK);
 
 	/* bind the socket to any valid IP address and a specific port */
 	memset((char *)&myaddr, 0, sizeof(myaddr));
@@ -49,16 +50,14 @@ void CRioNetworking::send(char* message)
 	}
 }
 
-void CRioNetworking::receive(char* buf, int bufLen)
+int CRioNetworking::receive(char* buf, int bufLen)
 {
 	int recvlen=0;
-	while(recvlen==0)
+	recvlen = recvfrom(fd, buf, bufLen, 0, (struct sockaddr *)&remaddr, &addrlen);
+	//printf("received %d bytes\n", recvlen);
+	if (recvlen > 0)
 	{
-		recvlen = recvfrom(fd, buf, bufLen, 0, (struct sockaddr *)&remaddr, &addrlen);
-		//printf("received %d bytes\n", recvlen);
-		if (recvlen > 0)
-		{
-			buf[recvlen] = 0;
-		}
+		buf[recvlen] = 0;
 	}
+	return recvlen;
 }

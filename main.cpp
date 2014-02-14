@@ -1,10 +1,10 @@
 #include "WPILib.h"
 #include "CRioNetworking.h"
 
-int networkMethod(void);
+void networkMethod(void);
 
-bool isComm;
-string data;
+bool isComm, sendStart=true;
+char data[20];
 
 class main : public IterativeRobot
 {
@@ -21,12 +21,18 @@ private:
 
 	input updateJoystick()
 	{
-		static bool invertButtonHeld=false;
+		static bool invertButtonHeld=false, commButtonHeld=false;
 		static int invertDrive=1; //1 for normal, -1 for inverted
 		if(driveStick.GetRawButton(1)&&!invertButtonHeld){
 			invertDrive=-invertDrive; //if invert button changed and new button state is pressed, invert invertDrive
 		}
 		invertButtonHeld=driveStick.GetRawButton(1); //update stored value for button
+		if(driveStick.GetRawButton(2)&&!commButtonHeld){
+			isComm=!isComm; //if invert button changed and new button state is pressed, invert isComm
+			sendStart=true;
+			printf("%s\n", isComm?"Targeting":"Driving");
+		}
+		commButtonHeld=driveStick.GetRawButton(2); //update stored value for button
 		float throttleScale=((1-driveStick.GetTwist())/2); //make throttle 0-1 for scaling the joystick input
 		return (input){-driveStick.GetX()*throttleScale*invertDrive, -driveStick.GetY()*throttleScale}; //get X & Y, scale by throttle, and apply drive inversion
 	}
@@ -39,16 +45,15 @@ public:
 	{
 		networking = new Task("networking", (FUNCPTR)&networkMethod);
 		isComm = false;
+		networking->Start();
 	}
 
 	void AutonomousInit(void)
 	{
-		networking->Start();
 	}
 
 	void AutonomousPeriodic(void)
 	{
-
 	}
 
 	void TeleopInit(void)
@@ -61,41 +66,26 @@ public:
 	void TeleopPeriodic(void)
 	{
 		input js=updateJoystick();
-		if(driveStick.GetRawButton(2))
+		if(isComm)
 		{
-			isComm = true;
-			if(networking->IsSuspended())
+			drivetrain.ArcadeDrive(0.0,0.0); //TODO: Remember to remove this
+			if(data[0]!='\0')
 			{
-				networking->Resume();
-				printf("Resuming\n");
+				float rotate = atof(strtok(data, ","));
+				float power = atof(strtok(NULL, ","));
+				if(power>0)
+				{
+					//TODO: when merged with shooter, make it shoot here
+				}
+				else
+				{
+					drivetrain.ArcadeDrive(0, rotate, false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+				}
 			}
-			printf("true\n");
 		}
 		else
-		{
-			isComm = false;
-			if(!networking->IsSuspended())
-			{
-				printf("Suspending: %d", networking->Suspend());
-				//printf("Suspending\n");
-			}
-			printf("false\n");
-		}
-		if(!isComm)
 		{
 			drivetrain.ArcadeDrive(js.drive,js.rotate,false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
-			printf("Driving\n");
-		}
-		else
-		{
-			printf("Targeting\n");
-			if(data.length())
-			{
-				int c = data.find_first_of(',');
-				char* drive = (char*)data.substr(0, c).c_str();
-				char* rotate = (char*)data.substr(c).c_str();
-				drivetrain.ArcadeDrive(atof((char*)drive), atof((char*)rotate), false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
-			}
 		}
 	}
 
@@ -103,8 +93,6 @@ public:
 	{
 		printf("Starting Test mode\n");
 		drivetrain.SetSafetyEnabled(false); //disable watchdog so that it doesn't fill the log with useless stuff. Also, we don't really want to move in Test
-		networking->Start();
-		printf("network started\n");
 		isComm=true;
 	}
 
@@ -117,31 +105,27 @@ public:
 	void DisabledInit(void)
 	{
 		printf("Stopping");
-		networking->Stop();
+		isComm=false;
 	}
 };
 
-int networkMethod(void)
+void networkMethod(void)
 {
 	CRioNetworking* cRio = new CRioNetworking();
-	char data[20];
 	cRio->connect();
-	while(!isComm);
-	sleep(1);
 	while(true)
 	{
-		if(isComm)
+		if(sendStart)
 		{
 			cRio->send("start"); //send the signal to the OBL to start imageProc
-			while(isComm)
-			{
-				cRio->receive(data, 20);
-				printf("buf=%s\n", data);
-			}
+			sendStart=false;
 		}
-		sleep(1);
+		if(cRio->receive(data, 20)==-1) //TODO: The socket still seems to be blocking, preventing this part from working (issue: if the obl is not availible at boot, networking will never start
+		{
+			sendStart=true;
+		}
+		nanosleep((timespec*)(0, 50000000),NULL);
 	}
-	return 0;
 }
 
 START_ROBOT_CLASS(main);
