@@ -124,7 +124,7 @@ void networkMethod(void)
 		{
 			sendStart=true;
 		}
-		nanosleep((timespec*)(0, 50000000),NULL);
+		nanosleep(&(timespec){0, 50000000},NULL);
 	}
 }
 
