@@ -3,8 +3,14 @@
 
 void networkMethod(void);
 
-bool isAuton;
-char data[20];
+struct input
+{
+	float rotate;
+	float drive;
+	float power;
+};
+
+input netData;
 CRioNetworking cRio=CRioNetworking();
 
 class main : public IterativeRobot
@@ -12,14 +18,10 @@ class main : public IterativeRobot
 	RobotDrive drivetrain;
 	Task *networking;
 	Joystick driveStick;
+	Encoder leftEncoder;
+	Encoder rightEncoder;
 
 private:
-	struct input
-	{
-		float rotate;
-		float drive;
-	};
-
 	input updateJoystick()
 	{
 		static bool invertButtonHeld=false, commButtonHeld=false;
@@ -40,25 +42,55 @@ private:
 		float throttleScale=((1-driveStick.GetTwist())/2); //make throttle 0-1 for scaling the joystick input
 		return (input){-driveStick.GetX()*throttleScale*invertDrive, -driveStick.GetY()*throttleScale}; //get X & Y, scale by throttle, and apply drive inversion
 	}
+	bool isAuton;
 
 public:
 	main(void):
 		//init the Joystick and RobotDrive (numbers refer to ports)
 		drivetrain(1,2),
-		driveStick(1)
+		driveStick(1),
+		leftEncoder(1,2), rightEncoder(3,4)
 	{
 		cRio.connect();
 		networking = new Task("networking", (FUNCPTR)&networkMethod);
-		isAuton = false;
 		networking->Start();
+		isAuton=false;
+		
+		leftEncoder.SetDistancePerPulse((3.1415926535*8)/250);
+		rightEncoder.SetDistancePerPulse((3.1415926535*8)/250);
+		leftEncoder.Start();
+		rightEncoder.Start();
 	}
 
 	void AutonomousInit(void)
 	{
+		leftEncoder.Reset();
+		rightEncoder.Reset();
+		drivetrain.SetSafetyEnabled(false); //disable watchdog
 	}
 
 	void AutonomousPeriodic(void)
 	{
+		//drivetrain.ArcadeDrive(0.5,0);
+		printf("Left Encoder:%f\t Raw:%i <--> Right Encoder:%f\t Raw:%i\n", leftEncoder.GetDistance(), (int)leftEncoder.GetRaw(), rightEncoder.GetDistance(), (int)rightEncoder.GetRaw());
+		SmartDashboard::PutNumber("Left Encoder", leftEncoder.GetDistance());
+		SmartDashboard::PutNumber("Right Encoder", rightEncoder.GetDistance());
+		if(leftEncoder.GetDistance()<60)
+		{
+			drivetrain.ArcadeDrive(.3,0);
+		}
+		else
+		{
+			if(netData.power>0)
+			{
+				printf("WHEEEEEEE! We should have scored here!"); //TODO: when merged with shooter, make it shoot here
+				isAuton=false;
+			}
+			else
+			{
+				drivetrain.ArcadeDrive(0, netData.rotate, false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+			}
+		}
 	}
 
 	void TeleopInit(void)
@@ -74,19 +106,14 @@ public:
 		if(isAuton)
 		{
 			drivetrain.ArcadeDrive(0.0,0.0); //TODO: Remember to remove this
-			if(data[0]!='\0')
+			if(netData.power>0)
 			{
-				float rotate = atof(strtok(data, ","));
-				float power = atof(strtok(NULL, ","));
-				if(power>0)
-				{
-					printf("WHEEEEEEE! We should have scored here!");//TODO: when merged with shooter, make it shoot here
-					isAuton=false;
-				}
-				else
-				{
-					drivetrain.ArcadeDrive(0, rotate, false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
-				}
+				printf("WHEEEEEEE! We should have scored here!"); //TODO: when merged with shooter, make it shoot here
+				isAuton=false;
+			}
+			else
+			{
+				drivetrain.ArcadeDrive(0, netData.rotate, false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
 			}
 		}
 		else
@@ -119,7 +146,10 @@ void networkMethod(void)
 {
 	while(true)
 	{
+		char data[20];
 		cRio.receive(data, 20);
+		netData.rotate = atof(strtok(data, ","));
+		netData.power = atof(strtok(NULL, ","));
 		nanosleep(&(timespec){0, 50000000},NULL);
 	}
 }
