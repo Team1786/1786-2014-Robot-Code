@@ -3,8 +3,9 @@
 
 void networkMethod(void);
 
-bool isComm, sendStart=true;
+bool isAuton;
 char data[20];
+CRioNetworking cRio=CRioNetworking();
 
 class main : public IterativeRobot
 {
@@ -28,9 +29,12 @@ private:
 		}
 		invertButtonHeld=driveStick.GetRawButton(1); //update stored value for button
 		if(driveStick.GetRawButton(2)&&!commButtonHeld){
-			isComm=!isComm; //if invert button changed and new button state is pressed, invert isComm
-			sendStart=true;
-			printf("%s\n", isComm?"Targeting":"Driving");
+			isAuton=!isAuton; //if invert button changed and new button state is pressed, invert isAuton
+			printf("%s\n", isAuton?"Targeting":"Driving");
+			if(isAuton)
+			{
+				cRio.send("start");
+			}
 		}
 		commButtonHeld=driveStick.GetRawButton(2); //update stored value for button
 		float throttleScale=((1-driveStick.GetTwist())/2); //make throttle 0-1 for scaling the joystick input
@@ -43,8 +47,9 @@ public:
 		drivetrain(1,2),
 		driveStick(1)
 	{
+		cRio.connect();
 		networking = new Task("networking", (FUNCPTR)&networkMethod);
-		isComm = false;
+		isAuton = false;
 		networking->Start();
 	}
 
@@ -66,7 +71,7 @@ public:
 	void TeleopPeriodic(void)
 	{
 		input js=updateJoystick();
-		if(isComm)
+		if(isAuton)
 		{
 			drivetrain.ArcadeDrive(0.0,0.0); //TODO: Remember to remove this
 			if(data[0]!='\0')
@@ -75,7 +80,8 @@ public:
 				float power = atof(strtok(NULL, ","));
 				if(power>0)
 				{
-					//TODO: when merged with shooter, make it shoot here
+					printf("WHEEEEEEE! We should have scored here!");//TODO: when merged with shooter, make it shoot here
+					isAuton=false;
 				}
 				else
 				{
@@ -93,7 +99,7 @@ public:
 	{
 		printf("Starting Test mode\n");
 		drivetrain.SetSafetyEnabled(false); //disable watchdog so that it doesn't fill the log with useless stuff. Also, we don't really want to move in Test
-		isComm=true;
+		isAuton=true;
 	}
 
 	void TestPeriodic(void) //prints debugging info to netconsole
@@ -105,25 +111,15 @@ public:
 	void DisabledInit(void)
 	{
 		printf("Stopping");
-		isComm=false;
+		isAuton=false;
 	}
 };
 
 void networkMethod(void)
 {
-	CRioNetworking* cRio = new CRioNetworking();
-	cRio->connect();
 	while(true)
 	{
-		if(sendStart)
-		{
-			cRio->send("start"); //send the signal to the OBL to start imageProc
-			sendStart=false;
-		}
-		if(cRio->receive(data, 20)==-1) //TODO: The socket still seems to be blocking, preventing this part from working (issue: if the obl is not availible at boot, networking will never start
-		{
-			sendStart=true;
-		}
+		cRio.receive(data, 20);
 		nanosleep(&(timespec){0, 50000000},NULL);
 	}
 }
