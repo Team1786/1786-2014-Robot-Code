@@ -36,6 +36,8 @@ private:
 			if(isAuton)
 			{
 				cRio.send("start");
+				netData.rotate = 0.01;
+				netData.drive = 0.01;
 			}
 		}
 		commButtonHeld=driveStick.GetRawButton(2); //update stored value for button
@@ -81,14 +83,19 @@ public:
 		}
 		else
 		{
-			if(netData.power>0)
+			if(netData.rotate != 0.0)
 			{
-				printf("WHEEEEEEE! We should have scored here!"); //TODO: when merged with shooter, make it shoot here
-				isAuton=false;
+				drivetrain.ArcadeDrive(0, netData.rotate, false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+			}
+			else if(netData.drive != 0.0)
+			{
+				drivetrain.ArcadeDrive(netData.drive, 0, false);
 			}
 			else
 			{
-				drivetrain.ArcadeDrive(0, netData.rotate, false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+				printf("Time to shoot");  //Shoot
+				isAuton=false;
+				drivetrain.ArcadeDrive(0.0, 0.0);
 			}
 		}
 	}
@@ -103,17 +110,23 @@ public:
 	void TeleopPeriodic(void)
 	{
 		input js=updateJoystick();
+		//printf("isAuton: %d netData.rotate: %f netData.drive: %f\n", isAuton, netData.rotate, netData.drive);
 		if(isAuton)
 		{
-			drivetrain.ArcadeDrive(0.0,0.0); //TODO: Remember to remove this
-			if(netData.power>0)
+			printf("isAuton: %d netData.rotate: %f netData.drive: %f\n", isAuton, netData.rotate, netData.drive);
+			if(netData.rotate != 0.0)
 			{
-				printf("WHEEEEEEE! We should have scored here!"); //TODO: when merged with shooter, make it shoot here
-				isAuton=false;
+				drivetrain.ArcadeDrive(0, netData.rotate, false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+			}
+			else if(netData.drive != 0.0)
+			{
+				drivetrain.ArcadeDrive(netData.drive, 0, false);
 			}
 			else
 			{
-				drivetrain.ArcadeDrive(0, netData.rotate, false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+				printf("Time to shoot");  //Shoot
+				isAuton=false;
+				drivetrain.ArcadeDrive(0.0, 0.0);
 			}
 		}
 		else
@@ -149,7 +162,7 @@ void networkMethod(void)
 		char data[20];
 		cRio.receive(data, 20);
 		netData.rotate = atof(strtok(data, ","));
-		netData.power = atof(strtok(NULL, ","));
+		netData.drive = atof(strtok(NULL, ","));
 		nanosleep(&(timespec){0, 50000000},NULL);
 	}
 }

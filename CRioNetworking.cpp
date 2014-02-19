@@ -2,7 +2,7 @@
 
 CRioNetworking::CRioNetworking(void)
 {
-	server = "10.17.86.6";	/* change this to use a different server */
+	server = "10.17.86.3";	/* change this to use a different server */
 	addrlen = sizeof(remaddr);		/* length of addresses */
 }
 
