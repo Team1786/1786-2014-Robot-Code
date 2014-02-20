@@ -15,22 +15,31 @@ CRioNetworking cRio=CRioNetworking();
 
 class main : public IterativeRobot
 {
-	RobotDrive drivetrain;
 	Task *networking;
-	Joystick driveStick;
-	Encoder leftEncoder;
-	Encoder rightEncoder;
-
+	RobotDrive drivetrain;
+	Talon kicker, kicker2, lifter;
+	Victor spinnerLeft, spinnerRight;
+	DigitalInput kickerLimiter;
+	Encoder leftEncoder, rightEncoder;
+	Joystick driveStick, shooterStick;
+	Timer timer;
+	
 private:
 	input updateJoystick()
 	{
-		static bool invertButtonHeld=false, commButtonHeld=false;
+		static bool invertButtonHeld=false, kickerLimiterHeld=false, commButtonHeld=false;
 		static int invertDrive=1; //1 for normal, -1 for inverted
-		if(driveStick.GetRawButton(1)&&!invertButtonHeld){
+		static float power=0;
+		float throttleScale=((1-driveStick.GetTwist())/2); //make throttle 0-1 for scaling the joystick input
+		float kickerScale=((1-shooterStick.GetTwist())/2); //make throttle 0-1 for scaling the joystick input
+		
+		if(driveStick.GetRawButton(11)&&!invertButtonHeld)
+		{
 			invertDrive=-invertDrive; //if invert button changed and new button state is pressed, invert invertDrive
 		}
-		invertButtonHeld=driveStick.GetRawButton(1); //update stored value for button
-		if(driveStick.GetRawButton(2)&&!commButtonHeld){
+		invertButtonHeld=driveStick.GetRawButton(11); //update stored value for button
+
+		if(shooterStick.GetRawButton(2)&&!commButtonHeld){
 			isAuton=!isAuton; //if invert button changed and new button state is pressed, invert isAuton
 			printf("%s\n", isAuton?"Targeting":"Driving");
 			if(isAuton)
@@ -41,17 +50,36 @@ private:
 			}
 		}
 		commButtonHeld=driveStick.GetRawButton(2); //update stored value for button
-		float throttleScale=((1-driveStick.GetTwist())/2); //make throttle 0-1 for scaling the joystick input
-		return (input){-driveStick.GetX()*throttleScale*invertDrive, -driveStick.GetY()*throttleScale}; //get X & Y, scale by throttle, and apply drive inversion
+		
+		if(shooterStick.GetRawButton(1)&&!power&&kickerScale) //if the button is pressed, and the kicker is currently unset, bring the kicker back
+		{
+			power=.5;
+			timer.Reset();
+		}
+		else if(kickerLimiter.Get()&&power>0) //if the limiter is hit, and the kicker is currently going backwards, set the kicker forwards at the power based on the throttle
+		{
+			power=-kickerScale;
+		}
+		else if(kickerLimiter.Get()&&power<0&&!kickerLimiterHeld||timer.Get()>.75) //if the limiter is hit, the kicker is currently going forwards, and the limiter has been released since we set it to kick, stop the kicker
+		{
+			power=0;
+		}
+		kickerLimiterHeld=kickerLimiter.Get();
+		
+		return (input){-driveStick.GetX()*throttleScale, -driveStick.GetY()*throttleScale*invertDrive, power}; //get X & Y, scale by throttle, and apply drive inversion
 	}
 	bool isAuton;
 
 public:
 	main(void):
-		//init the Joystick and RobotDrive (numbers refer to ports)
+		//init the Joystick, RobotDrive and Talon motors (numbers refer to ports)
 		drivetrain(1,2),
-		driveStick(1),
-		leftEncoder(1,2), rightEncoder(3,4)
+		kicker(3), kicker2(7),
+		lifter(4), spinnerLeft(5), spinnerRight(6),
+		kickerLimiter(5),
+		leftEncoder(1,2), rightEncoder(3,4),
+		driveStick(1), shooterStick(2),
+		timer()
 	{
 		cRio.connect();
 		networking = new Task("networking", (FUNCPTR)&networkMethod);
@@ -62,6 +90,7 @@ public:
 		rightEncoder.SetDistancePerPulse((3.1415926535*8)/250);
 		leftEncoder.Start();
 		rightEncoder.Start();
+		timer.Start();
 	}
 
 	void AutonomousInit(void)
@@ -74,14 +103,21 @@ public:
 	void AutonomousPeriodic(void)
 	{
 		//drivetrain.ArcadeDrive(0.5,0);
-		printf("Left Encoder:%f\t Raw:%i <--> Right Encoder:%f\t Raw:%i\n", leftEncoder.GetDistance(), (int)leftEncoder.GetRaw(), rightEncoder.GetDistance(), (int)rightEncoder.GetRaw());
+		//printf("Left Encoder:%f\t Raw:%i <--> Right Encoder:%f\t Raw:%i\n", leftEncoder.GetDistance(), (int)leftEncoder.GetRaw(), rightEncoder.GetDistance(), (int)rightEncoder.GetRaw());
 		SmartDashboard::PutNumber("Left Encoder", leftEncoder.GetDistance());
 		SmartDashboard::PutNumber("Right Encoder", rightEncoder.GetDistance());
-		if(leftEncoder.GetDistance()<60)
+		if(leftEncoder.GetDistance()<60&&!isAuton)
 		{
-			drivetrain.ArcadeDrive(.3,0);
+			drivetrain.ArcadeDrive(.5,0);
 		}
-		else
+		else if(!isAuton)
+		{
+			cRio.send("start");
+			isAuton=true;
+			netData.rotate = 0.01;
+			netData.drive = 0.01;
+		}
+		else if(isAuton)
 		{
 			if(netData.rotate != 0.0)
 			{
@@ -98,6 +134,10 @@ public:
 				drivetrain.ArcadeDrive(0.0, 0.0);
 			}
 		}
+		else
+		{
+			drivetrain.ArcadeDrive(0.0, 0.0);
+		}
 	}
 
 	void TeleopInit(void)
@@ -105,12 +145,16 @@ public:
 		printf("Starting Teleop mode");
 		drivetrain.SetExpiration(2); //set the timeout for the watchdog
 		drivetrain.SetSafetyEnabled(true); //enable watchdog
+		leftEncoder.Reset();
+		rightEncoder.Reset();
 	}
 
 	void TeleopPeriodic(void)
 	{
 		input js=updateJoystick();
-		//printf("isAuton: %d netData.rotate: %f netData.drive: %f\n", isAuton, netData.rotate, netData.drive);
+		SmartDashboard::PutNumber("Left Encoder", leftEncoder.GetDistance());
+		SmartDashboard::PutNumber("Right Encoder", rightEncoder.GetDistance());
+		SmartDashboard::PutBoolean("isAuton", isAuton);
 		if(isAuton)
 		{
 			printf("isAuton: %d netData.rotate: %f netData.drive: %f\n", isAuton, netData.rotate, netData.drive);
@@ -124,14 +168,37 @@ public:
 			}
 			else
 			{
-				printf("Time to shoot");  //Shoot
-				isAuton=false;
+				static bool kickerLimiterHeld;
+				printf("Time to shoot");
+				if(!kicker.Get()) //if the button is pressed, and the kicker is currently unset, bring the kicker back
+				{
+					kicker.Set(.5);
+					kicker2.Set(.5);
+					timer.Reset();
+				}
+				else if(kickerLimiter.Get()&&kicker.Get()>0) //if the limiter is hit, and the kicker is currently going backwards, set the kicker forwards at the power based on the throttle
+				{
+					kicker.Set(-1);
+					kicker2.Set(-1);
+				}
+				else if(kickerLimiter.Get()&&kicker.Get()<0&&!kickerLimiterHeld||timer.Get()>.75) //if the limiter is hit, the kicker is currently going forwards, and the limiter has been released since we set it to kick, stop the kicker
+				{
+					kicker.Set(0);
+					kicker2.Set(0);
+					isAuton=false;
+				}
+				kickerLimiterHeld=kickerLimiter.Get();
 				drivetrain.ArcadeDrive(0.0, 0.0);
 			}
 		}
 		else
 		{
 			drivetrain.ArcadeDrive(js.drive,js.rotate,false); //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+			kicker.Set(js.power);
+			kicker2.Set(js.power);
+			lifter.Set(-shooterStick.GetY()*0.5); //TODO: figure out which of these should be inverted
+			spinnerLeft.Set((shooterStick.GetRawButton(3)+-shooterStick.GetRawButton(4))*((1-shooterStick.GetTwist())/2));
+			spinnerRight.Set((-shooterStick.GetRawButton(3)+shooterStick.GetRawButton(4))*((1-shooterStick.GetTwist())/2));
 		}
 	}
 
@@ -145,7 +212,7 @@ public:
 	void TestPeriodic(void) //prints debugging info to netconsole
 	{
 		input js=updateJoystick();
-		//printf("rotate:%f,drive%f,X:%f,Y:%f,Z(Twist):%f,Twist(Throttle):%f,Throttle:%f\n", js.rotate, js.drive, driveStick.GetX(), driveStick.GetY(), driveStick.GetZ(), driveStick.GetTwist(), driveStick.GetThrottle()); //report what WPILIB thinks these are. Some don't match with what we think they are.
+		printf("rotate:%f,drive%f,X:%f,Y:%f,Z(Twist):%f,Twist(Throttle):%f,Throttle:%f\n", js.rotate, js.drive, driveStick.GetX(), driveStick.GetY(), driveStick.GetZ(), driveStick.GetTwist(), driveStick.GetThrottle()); //report what WPILIB thinks these are. Some don't match with what we think they are.
 	}
 
 	void DisabledInit(void)
