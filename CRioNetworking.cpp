@@ -44,7 +44,7 @@ void CRioNetworking::disconnect(){
 void CRioNetworking::send(char* message)
 {
 	printf("Sending \"%s\"\n", message);
-	if (sendto(fd, message, strlen(message), 0, (struct sockaddr *)&remaddr, addrlen)==-1)
+	if (sendto(fd, message, strlen(message), 0, (struct sockaddr *)&remaddr, addrlen) == -1)
 	{
 		perror("sendto");
 	}
@@ -52,9 +52,7 @@ void CRioNetworking::send(char* message)
 
 int CRioNetworking::receive(char* buf, int bufLen)
 {
-	int recvlen=0;
-	recvlen = recvfrom(fd, buf, bufLen, 0, (struct sockaddr *)&remaddr, &addrlen);
-	//printf("received %d bytes\n", recvlen);
+	int recvlen = recvfrom(fd, buf, bufLen, 0, (struct sockaddr *)&remaddr, &addrlen);
 	if (recvlen > 0)
 	{
 		buf[recvlen] = 0;
