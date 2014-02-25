@@ -47,15 +47,16 @@ private:
 		}
 		commButtonHeld = driveStick.GetRawButton(2);  //update stored value for button
 		
-		if(shooterStick.GetRawButton(1)) kick(kickerScale);  //if the button is pressed, shoot
+		if(shooterStick.GetRawButton(1)) kick(kickerScale, true);  //if the button is pressed, shoot
+		else kick(kickerScale, false);
 		return (input){-driveStick.GetX() * throttleScale, -driveStick.GetY() * throttleScale * invertDrive};  //get X & Y, scale by throttle, and apply drive inversion
 	}
 	
-	bool kick(float kickerPower)
+	bool kick(float kickerPower, bool startKicking)
 	{
 		static bool kickerLimiterHeld;
-		float power;
-		if(!kicker.Get())  //if the kicker is currently unset, bring the kicker back
+		static float power;
+		if(!kicker.Get() && startKicking)  //if the kicker is currently unset, bring the kicker back
 		{
 			power = 0.5;
 			timer.Reset();
@@ -76,7 +77,7 @@ private:
 		else
 		{
 			printf("Time to shoot");
-			return kick(1);
+			return kick(1, true);
 			drivetrain.ArcadeDrive(0.0, 0.0);
 		}
 		return true;
