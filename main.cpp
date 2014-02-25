@@ -47,8 +47,7 @@ private:
 		}
 		commButtonHeld = driveStick.GetRawButton(2);  //update stored value for button
 		
-		if(shooterStick.GetRawButton(1)) kick(kickerScale, true);  //if the button is pressed, shoot
-		else kick(kickerScale, false);
+		else kick(kickerScale, shooterStick.GetRawButton(1));  //if the button is pressed, begin shooting, otherwise just update shooter
 		return (input){-driveStick.GetX() * throttleScale, -driveStick.GetY() * throttleScale * invertDrive};  //get X & Y, scale by throttle, and apply drive inversion
 	}
 	
