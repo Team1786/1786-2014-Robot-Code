@@ -47,22 +47,22 @@ private:
 		}
 		commButtonHeld = driveStick.GetRawButton(2);  //update stored value for button
 		
-		else kick(kickerScale, shooterStick.GetRawButton(1));  //if the button is pressed, begin shooting, otherwise just update shooter
+		kick(kickerScale, shooterStick.GetRawButton(1));  //if the button is pressed, begin shooting, otherwise just update shooter
 		return (input){-driveStick.GetX() * throttleScale, -driveStick.GetY() * throttleScale * invertDrive};  //get X & Y, scale by throttle, and apply drive inversion
 	}
 	
-	bool kick(float kickerPower, bool startKicking)
+	bool kick(float kickerPower, bool startStop)
 	{
 		static bool kickerLimiterHeld;
 		static float power;
-		if(!kicker.Get() && startKicking)  //if the kicker is currently unset, bring the kicker back
+		if(!kicker.Get() && startStop>0)  //if the kicker is currently unset, bring the kicker back
 		{
 			power = 0.5;
 			timer.Reset();
 		}
 		else if(kickerLimiter.Get() && kicker.Get() > 0)
 			power = -kickerPower;  //if the limiter is hit, and the kicker is currently going backwards, set the kicker forwards at the given power
-		else if((kickerLimiter.Get() && kicker.Get() < 0 && !kickerLimiterHeld) || timer.Get() > .75)
+		else if((kickerLimiter.Get() && kicker.Get() < 0 && !kickerLimiterHeld) || timer.Get() > .75 || startStop<0)
 			power = 0;//if the limiter is hit, the kicker is currently going forwards, and the limiter has been released since we set it to kick, stop the kicker
 		kickerLimiterHeld = kickerLimiter.Get();
 		kicker.Set(power);
@@ -169,6 +169,7 @@ public:
 	void DisabledInit(void)
 	{
 		printf("Stopping");
+		kick(0, -1);
 	}
 };
 
