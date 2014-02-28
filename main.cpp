@@ -30,6 +30,7 @@ private:
 		static bool invertButtonHeld = false, commButtonHeld = false;
 		static int invertDrive = 1;  //1 for normal, -1 for inverted
 		float throttleScale = ((1 - driveStick.GetTwist()) / 2), kickerScale = ((1 - shooterStick.GetTwist()) / 2);  //make throttles 0 - 1 for scaling the joystick input
+		static float kickPower=1;
 		
 		if(driveStick.GetRawButton(11) && !invertButtonHeld)
 			invertDrive = -invertDrive;  //if invert button changed and new button state is pressed, invert invertDrive
@@ -47,11 +48,13 @@ private:
 		}
 		commButtonHeld = driveStick.GetRawButton(2);  //update stored value for button
 		
-		kick(kickerScale, shooterStick.GetRawButton(1));  //if the button is pressed, begin shooting, otherwise just update shooter
+		if(shooterStick.GetRawButton(1)) kickPower=1;
+		if(shooterStick.GetRawButton(5)) kickPower=kickerScale;
+		kick(kickPower, shooterStick.GetRawButton(1) || shooterStick.GetRawButton(5));  //if the button is pressed, begin shooting, otherwise just update shooter
 		return (input){-driveStick.GetX() * throttleScale, -driveStick.GetY() * throttleScale * invertDrive};  //get X & Y, scale by throttle, and apply drive inversion
 	}
 	
-	bool kick(float kickerPower, bool startStop)
+	bool kick(float kickerPower, int startStop)
 	{
 		static bool kickerLimiterHeld;
 		static float power;
