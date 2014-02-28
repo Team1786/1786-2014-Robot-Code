@@ -9,7 +9,6 @@ struct input
 	float drive;
 };
 
-input netData;
 CRioNetworking cRio = CRioNetworking();
 
 class main : public IterativeRobot
@@ -24,10 +23,9 @@ class main : public IterativeRobot
 	Timer timer;
 	
 private:
-	bool isAuton;
 	input updateJoystick()
 	{
-		static bool invertButtonHeld = false, commButtonHeld = false;
+		static bool invertButtonHeld = false;
 		static int invertDrive = 1;  //1 for normal, -1 for inverted
 		float throttleScale = ((1 - driveStick.GetTwist()) / 2), kickerScale = ((1 - shooterStick.GetTwist()) / 2);  //make throttles 0 - 1 for scaling the joystick input
 		static float kickPower=1;
@@ -35,18 +33,6 @@ private:
 		if(driveStick.GetRawButton(11) && !invertButtonHeld)
 			invertDrive = -invertDrive;  //if invert button changed and new button state is pressed, invert invertDrive
 		invertButtonHeld = driveStick.GetRawButton(11);  //update stored value for button
-
-		if(shooterStick.GetRawButton(2) && !commButtonHeld){
-			isAuton = !isAuton;  //if invert button changed and new button state is pressed, invert isAuton
-			printf("%s\n", isAuton?"Targeting":"Driving");
-			if(isAuton)
-			{
-				cRio.send("start");
-				netData.rotate = 0.01;
-				netData.drive = 0.01;
-			}
-		}
-		commButtonHeld = driveStick.GetRawButton(2);  //update stored value for button
 		
 		if(shooterStick.GetRawButton(1)) kickPower=1;
 		if(shooterStick.GetRawButton(5)) kickPower=kickerScale;
@@ -56,6 +42,8 @@ private:
 	
 	bool kick(float kickerPower, int startStop)
 	{
+		Timer timer;
+		if(!timer.Get()) timer.Start();
 		static bool kickerLimiterHeld;
 		static float power;
 		if(!kicker.Get() && startStop>0)  //if the kicker is currently unset, bring the kicker back
@@ -73,19 +61,8 @@ private:
 		return power;
 	}
 
-	bool autonShoot()
-	{
-		if(netData.rotate || netData.drive) drivetrain.ArcadeDrive(netData.drive, netData.rotate, false);
-		else
-		{
-			printf("Time to shoot");
-			return kick(1, true);
-			drivetrain.ArcadeDrive(0.0, 0.0);
-		}
-		return true;
-	}
-
 public:
+	//static float distance; //FIXME: Global variable not compiling, this won't run
 	main(void):
 		//init the Joystick, RobotDrive and Talon motors (numbers refer to ports)
 		drivetrain(1, 2),
@@ -98,14 +75,11 @@ public:
 	{
 		cRio.connect();
 		networking = new Task("networking", (FUNCPTR)&networkMethod);
-		networking->Start();
-		isAuton = false;
-		
+		networking->Start();		
 		leftEncoder.SetDistancePerPulse((3.1415926535 * 8) / 250);
 		rightEncoder.SetDistancePerPulse((3.1415926535 * 8) / 250);
 		leftEncoder.Start();
 		rightEncoder.Start();
-		timer.Start();
 	}
 
 	void AutonomousInit(void)
@@ -117,19 +91,24 @@ public:
 
 	void AutonomousPeriodic(void)
 	{
+		static Timer timer;
+		if(!timer.Get()) timer.Start();
 		static bool shoot = false, doneShooting = false;
 		SmartDashboard::PutNumber("Left Encoder", leftEncoder.GetDistance());
 		SmartDashboard::PutNumber("Right Encoder", rightEncoder.GetDistance());
 		if(leftEncoder.GetDistance() < 60 && !shoot) drivetrain.ArcadeDrive(.5, 0);
 		else if(!shoot && !doneShooting)
 		{
-			cRio.send("start");
+			timer.Reset();
+			lifter.Set(.2);
 			shoot = true;
-			netData.rotate = 0.01;
-			netData.drive = 0.01;
 		}
-		else if(shoot && !doneShooting) doneShooting = autonShoot();
+		else if(shoot && !doneShooting && timer.Get()>1){
+			doneShooting = !kick(1, true);
+			lifter.Set(0);
+		}
 		else drivetrain.ArcadeDrive(0.0, 0.0);
+		SmartDashboard::PutNumber("timer", timer.Get());
 	}
 
 	void TeleopInit(void)
@@ -146,15 +125,11 @@ public:
 		input js = updateJoystick();
 		SmartDashboard::PutNumber("Left Encoder", leftEncoder.GetDistance());
 		SmartDashboard::PutNumber("Right Encoder", rightEncoder.GetDistance());
-		SmartDashboard::PutBoolean("isAuton", isAuton);
-		if(isAuton) autonShoot();
-		else
-		{
-			drivetrain.ArcadeDrive(js.drive, js.rotate, false);  //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
-			lifter.Set(-shooterStick.GetY() * 0.5);  //TODO: figure out which of these should be inverted
-			spinnerLeft.Set((shooterStick.GetRawButton(3) + -shooterStick.GetRawButton(4)) * ((1 - shooterStick.GetTwist()) / 2));
-			spinnerRight.Set((-shooterStick.GetRawButton(3) + shooterStick.GetRawButton(4)) * ((1 - shooterStick.GetTwist()) / 2));
-		}
+		//SmartDashboard::PutNumber("Distance", distance); //FIXME
+		drivetrain.ArcadeDrive(js.drive, js.rotate, false);  //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
+		lifter.Set(-shooterStick.GetY() * 0.5);  //TODO: figure out which of these should be inverted
+		spinnerLeft.Set((shooterStick.GetRawButton(3) + -shooterStick.GetRawButton(4)) * ((1 - shooterStick.GetTwist()) / 2));
+		spinnerRight.Set((-shooterStick.GetRawButton(3) + shooterStick.GetRawButton(4)) * ((1 - shooterStick.GetTwist()) / 2));
 	}
 
 	void TestInit(void)
@@ -182,8 +157,7 @@ void networkMethod(void)
 	{
 		char data[20];
 		cRio.receive(data, 20);
-		netData.rotate = atof(strtok(data, ","));
-		netData.drive = atof(strtok(NULL, ","));
+		//main::distance = atof(data); //FIXME
 		nanosleep(&(timespec){0, 50000000}, NULL);
 	}
 }
