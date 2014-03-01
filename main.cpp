@@ -9,6 +9,7 @@ struct input
 	float drive;
 };
 
+input netData;
 CRioNetworking cRio = CRioNetworking();
 
 class main : public IterativeRobot
@@ -60,9 +61,13 @@ private:
 		kicker2.Set(power);
 		return power;
 	}
+	void writeSmartDashboard(){
+		SmartDashboard::PutNumber("Left Encoder", leftEncoder.GetDistance());
+		SmartDashboard::PutNumber("Right Encoder", rightEncoder.GetDistance());
+		SmartDashboard::PutNumber("Distance", netData.drive);
+	}
 
 public:
-	//static float distance; //FIXME: Global variable not compiling, this won't run
 	main(void):
 		//init the Joystick, RobotDrive and Talon motors (numbers refer to ports)
 		drivetrain(1, 2),
@@ -91,11 +96,10 @@ public:
 
 	void AutonomousPeriodic(void)
 	{
+		writeSmartDashboard();
 		static Timer timer;
 		if(!timer.Get()) timer.Start();
 		static bool shoot = false, doneShooting = false;
-		SmartDashboard::PutNumber("Left Encoder", leftEncoder.GetDistance());
-		SmartDashboard::PutNumber("Right Encoder", rightEncoder.GetDistance());
 		if(leftEncoder.GetDistance() < 60 && !shoot) drivetrain.ArcadeDrive(.5, 0);
 		else if(!shoot && !doneShooting)
 		{
@@ -122,10 +126,8 @@ public:
 
 	void TeleopPeriodic(void)
 	{
+		writeSmartDashboard();
 		input js = updateJoystick();
-		SmartDashboard::PutNumber("Left Encoder", leftEncoder.GetDistance());
-		SmartDashboard::PutNumber("Right Encoder", rightEncoder.GetDistance());
-		//SmartDashboard::PutNumber("Distance", distance); //FIXME
 		drivetrain.ArcadeDrive(js.drive, js.rotate, false);  //pass the joystick information to the drivetrain using the WPILib method ArcadeDrive
 		lifter.Set(-shooterStick.GetY() * 0.5);  //TODO: figure out which of these should be inverted
 		spinnerLeft.Set((shooterStick.GetRawButton(3) + -shooterStick.GetRawButton(4)) * ((1 - shooterStick.GetTwist()) / 2));
@@ -140,6 +142,7 @@ public:
 
 	void TestPeriodic(void)  //prints debugging info to netconsole
 	{
+		writeSmartDashboard();
 		input js = updateJoystick();
 		printf("rotate:%f, drive%f, X:%f, Y:%f, Z(Twist):%f, Twist(Throttle):%f, Throttle:%f\n", js.rotate, js.drive, driveStick.GetX(), driveStick.GetY(), driveStick.GetZ(), driveStick.GetTwist(), driveStick.GetThrottle());  //report what WPILIB thinks these are. Some don't match with what we think they are.
 	}
@@ -149,6 +152,10 @@ public:
 		printf("Stopping");
 		kick(0, -1);
 	}
+	void DisabledPeriodic(void)
+	{
+		writeSmartDashboard();
+	}
 };
 
 void networkMethod(void)
@@ -157,7 +164,7 @@ void networkMethod(void)
 	{
 		char data[20];
 		cRio.receive(data, 20);
-		//main::distance = atof(data); //FIXME
+		netData.drive = atof(data);
 		nanosleep(&(timespec){0, 50000000}, NULL);
 	}
 }
