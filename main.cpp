@@ -87,34 +87,6 @@ public:
 		rightEncoder.Start();
 	}
 
-	void AutonomousInit(void)
-	{
-		leftEncoder.Reset();
-		rightEncoder.Reset();
-		drivetrain.SetSafetyEnabled(false);  //disable watchdog
-	}
-
-	void AutonomousPeriodic(void)
-	{
-		writeSmartDashboard();
-		static Timer timer;
-		if(!timer.Get()) timer.Start();
-		static bool shoot = false, doneShooting = false;
-		if(leftEncoder.GetDistance() < 60 && !shoot) drivetrain.ArcadeDrive(.5, 0);
-		else if(!shoot && !doneShooting)
-		{
-			timer.Reset();
-			lifter.Set(.2);
-			shoot = true;
-		}
-		else if(shoot && !doneShooting && timer.Get()>1){
-			doneShooting = !kick(1, true);
-			lifter.Set(0);
-		}
-		else drivetrain.ArcadeDrive(0.0, 0.0);
-		SmartDashboard::PutNumber("timer", timer.Get());
-	}
-
 	void TeleopInit(void)
 	{
 		printf("Starting Teleop mode");
