@@ -21,7 +21,6 @@ class main : public IterativeRobot
 	DigitalInput kickerLimiter;
 	Encoder leftEncoder, rightEncoder;
 	Joystick driveStick, shooterStick;
-	Timer timer;
 	
 private:
 	input updateJoystick()
@@ -75,8 +74,7 @@ public:
 		lifter(4), spinnerLeft(5), spinnerRight(6),
 		kickerLimiter(5),
 		leftEncoder(1, 2), rightEncoder(3, 4),
-		driveStick(1), shooterStick(2),
-		timer()
+		driveStick(1), shooterStick(2)
 	{
 		cRio.connect();
 		networking = new Task("networking", (FUNCPTR)&networkMethod);
@@ -85,6 +83,34 @@ public:
 		rightEncoder.SetDistancePerPulse((3.1415926535 * 8) / 250);
 		leftEncoder.Start();
 		rightEncoder.Start();
+	}
+	
+	void AutonomousInit(void)
+	{
+		leftEncoder.Reset();
+		rightEncoder.Reset();
+		drivetrain.SetSafetyEnabled(false);  //disable watchdog
+	}
+
+	void AutonomousPeriodic(void)
+	{
+		writeSmartDashboard();
+		static Timer timer;
+		if(!timer.Get()) timer.Start();
+		static bool shoot = false, doneShooting = false;
+		if(leftEncoder.GetDistance() < 60 && !shoot) drivetrain.ArcadeDrive(.5, 0);
+		else if(!shoot && !doneShooting)
+		{
+			timer.Reset();
+			lifter.Set(.2);
+			shoot = true;
+		}
+		else if(shoot && !doneShooting && timer.Get()>1){
+			doneShooting = !kick(1, true);
+			lifter.Set(0);
+		}
+		else drivetrain.ArcadeDrive(0.0, 0.0);
+		SmartDashboard::PutNumber("timer", timer.Get());
 	}
 
 	void TeleopInit(void)
