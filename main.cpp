@@ -14,15 +14,19 @@ CRioNetworking cRio = CRioNetworking();
 
 class main : public IterativeRobot
 {
-	Task *networking;
+
 	RobotDrive drivetrain;
 	Talon kicker, kicker2, lifter;
 	Victor spinnerLeft, spinnerRight;
+
 	DigitalInput kickerLimiter;
-	Encoder leftEncoder, rightEncoder;
-	Joystick driveStick, shooterStick;
 	AnalogChannel ultrasonic;
-	
+	Encoder leftEncoder, rightEncoder;
+
+	Task *networking;
+
+	Joystick driveStick, shooterStick;
+
 private:
 	input updateJoystick()
 	{
@@ -30,17 +34,17 @@ private:
 		static int invertDrive = 1;  //1 for normal, -1 for inverted
 		float throttleScale = ((1 - driveStick.GetTwist()) / 2), kickerScale = ((1 - shooterStick.GetTwist()) / 2);  //make throttles 0 - 1 for scaling the joystick input
 		static float kickPower=1;
-		
+
 		if(driveStick.GetRawButton(11) && !invertButtonHeld)
 			invertDrive = -invertDrive;  //if invert button changed and new button state is pressed, invert invertDrive
 		invertButtonHeld = driveStick.GetRawButton(11);  //update stored value for button
-		
+
 		if(shooterStick.GetRawButton(1)) kickPower=1;
 		if(shooterStick.GetRawButton(5)) kickPower=kickerScale;
 		kick(kickPower, shooterStick.GetRawButton(1) || shooterStick.GetRawButton(5));  //if the button is pressed, begin shooting, otherwise just update shooter
 		return (input){-driveStick.GetX() * throttleScale, -driveStick.GetY() * throttleScale * invertDrive};  //get X & Y, scale by throttle, and apply drive inversion
 	}
-	
+
 	bool kick(float kickerPower, int startStop)
 	{
 		Timer timer;
@@ -55,7 +59,7 @@ private:
 		else if(kickerLimiter.Get() && kicker.Get() > 0)
 			power = -kickerPower;  //if the limiter is hit, and the kicker is currently going backwards, set the kicker forwards at the given power
 		else if((kickerLimiter.Get() && kicker.Get() < 0 && !kickerLimiterHeld) || timer.Get() > .75 || startStop<0)
-			power = 0;//if the limiter is hit, the kicker is currently going forwards, and the limiter has been released since we set it to kick, stop the kicker
+			power = 0;  //if the limiter is hit, the kicker is currently going forwards, and the limiter has been released since we set it to kick, stop the kicker
 		kickerLimiterHeld = kickerLimiter.Get();
 		kicker.Set(power);
 		kicker2.Set(power);
@@ -76,20 +80,22 @@ public:
 		lifter(4), spinnerLeft(5), spinnerRight(6),
 		kickerLimiter(5),
 		leftEncoder(1, 2), rightEncoder(3, 4),
-		driveStick(1), shooterStick(2),
-		ultrasonic(1)
+		ultrasonic(1),
+		driveStick(1), shooterStick(2)
 	{
 		cRio.connect();
 		networking = new Task("networking", (FUNCPTR)&networkMethod);
-		networking->Start();		
+		networking->Start();
+
 		leftEncoder.SetDistancePerPulse((3.1415926535 * 8) / 250);
 		rightEncoder.SetDistancePerPulse((3.1415926535 * 8) / 250);
 		leftEncoder.Start();
 		rightEncoder.Start();
 	}
-	
+
 	void AutonomousInit(void)
 	{
+		printf("Starting Autononmous mode");
 		leftEncoder.Reset();
 		rightEncoder.Reset();
 		drivetrain.SetSafetyEnabled(false);  //disable watchdog
@@ -101,6 +107,7 @@ public:
 		static Timer timer;
 		if(!timer.Get()) timer.Start();
 		static bool shoot = false, doneShooting = false;
+		
 		if(leftEncoder.GetDistance() < 60 && !shoot) drivetrain.ArcadeDrive(.5, 0);
 		else if(!shoot && !doneShooting)
 		{
@@ -151,8 +158,9 @@ public:
 	void DisabledInit(void)
 	{
 		printf("Stopping");
-		kick(0, -1);
+		kick(0, -1);  //stop the kicker so that it doesn't start again after we re-enable
 	}
+	
 	void DisabledPeriodic(void)
 	{
 		writeSmartDashboard();
