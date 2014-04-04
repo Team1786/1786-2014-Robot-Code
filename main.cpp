@@ -21,6 +21,7 @@ class main : public IterativeRobot
 	DigitalInput kickerLimiter;
 	Encoder leftEncoder, rightEncoder;
 	Joystick driveStick, shooterStick;
+	AnalogChannel ultrasonic;
 	
 private:
 	input updateJoystick()
@@ -63,7 +64,8 @@ private:
 	void writeSmartDashboard(){
 		SmartDashboard::PutNumber("Left Encoder", leftEncoder.GetDistance());
 		SmartDashboard::PutNumber("Right Encoder", rightEncoder.GetDistance());
-		SmartDashboard::PutNumber("Distance", netData.drive);
+		SmartDashboard::PutNumber("Vision Distance", netData.drive);
+		SmartDashboard::PutNumber("Ultrasonic Distance", ultrasonic.GetAverageVoltage()/(5.1/1024)*.3937); // / by Sensor scaling, * by cm to in
 	}
 
 public:
@@ -74,7 +76,8 @@ public:
 		lifter(4), spinnerLeft(5), spinnerRight(6),
 		kickerLimiter(5),
 		leftEncoder(1, 2), rightEncoder(3, 4),
-		driveStick(1), shooterStick(2)
+		driveStick(1), shooterStick(2),
+		ultrasonic(1)
 	{
 		cRio.connect();
 		networking = new Task("networking", (FUNCPTR)&networkMethod);
